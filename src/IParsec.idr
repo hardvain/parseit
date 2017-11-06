@@ -18,7 +18,7 @@ item = \input => case (unpack input) of
 applySecondParser : (a, String) -> Parser b -> List ((a,b), String)
 applySecondParser (v, s) parserb =  case parserb s of
   [] => []
-  (x::xs) => [((v, fst x), snd x)]
+  (xs) => concat (map (\(b,rest) => [((v,b), rest)] ) xs)
 
 seq : Parser a -> Parser b -> Parser (a,b)
 seq parser1 parser2 = \input => case parser1 input of
