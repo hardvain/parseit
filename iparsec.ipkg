@@ -1,0 +1,7 @@
+package iparsec
+
+sourcedir = src
+
+main = IParsec
+
+modules = IParsec
