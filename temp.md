@@ -30,3 +30,8 @@ Error
 ===============
 data ParseError = ParseError !SourcePos [Message]
     deriving ( Typeable )
+
+
+Utils
+
+Build a type level splitAt that returns (Char, List Char) if splitat takes 1

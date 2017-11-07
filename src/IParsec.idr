@@ -1,29 +1,42 @@
 module IParsec 
 
 
-Parser : Type -> Type
-Parser a = String -> List (a, String)
+data Parser a = MkParser (String -> List(a,String))
+
+Functor Parser where
+  map func (MkParser f) = MkParser $ \input => map (\(k,v) => (func k, v)) (f input)
 
 result : a -> Parser a
-result v = \input => [(v, input)]
+result x = MkParser $ (\input => [(x, input)])
 
-zero : Parser a
-zero = \_ => []
+zero : Parser a 
+zero = MkParser $ \_ => []
 
 item : Parser Char
-item = \input => case (unpack input) of
-                  [] => []
-                  (x :: xs) => [(x, pack xs)]
+item = MkParser $ \input => case (unpack input) of
+                             [] => []
+                             (x :: xs) => [(x, pack xs)] 
 
-applySecondParser : (a, String) -> Parser b -> List ((a,b), String)
-applySecondParser (v, s) parserb =  case parserb s of
-  [] => []
-  (xs) => concat (map (\(b,rest) => [((v,b), rest)] ) xs)
+-- result : a -> Parser a
+-- result v = MkParser $ \input => [(v, input)]
 
-seq : Parser a -> Parser b -> Parser (a,b)
-seq parser1 parser2 = \input => case parser1 input of
-  [] => []
-  (xs) => concat (map (\v => applySecondParser v parser2) xs)
+-- zero : Parser a
+-- zero = MkParser ( \_ => MkParser $ [])
+
+-- item : Parser Char
+-- item = MkParser ( \input => case (unpack input) of
+--                   [] => []
+--                   (x :: xs) => [(x, pack xs)] )
+
+-- applySecondParser : (a, String) -> Parser b -> List ((a,b), String)
+-- applySecondParser (v, s) parserb =  case parserb s of
+--   [] => []
+--   (xs) => concat (map (\(b,rest) => [((v,b), rest)] ) xs)
+
+-- seq : Parser a -> Parser b -> Parser (a,b)
+-- seq parser1 parser2 = \input => case parser1 input of
+--   [] => []
+--   (xs) => concat (map (\v => applySecondParser v parser2) xs)
 
 
 {-
