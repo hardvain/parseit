@@ -17,6 +17,8 @@ item = MkParser $ \input => case (unpack input) of
                              [] => []
                              (x :: xs) => [(x, pack xs)] 
 
+satisfy : (Char -> Bool) -> Parser Char
+satisfy predicate = filter (\(k,v) => predicate k) xs
 -- result : a -> Parser a
 -- result v = MkParser $ \input => [(v, input)]
 
