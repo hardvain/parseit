@@ -1,35 +1,33 @@
 module IParsec 
 
+import Utils
 
-data Parser a = MkParser (String -> List(a,String))
+record Parser a where
+  constructor MkParser
+  runParser : String -> List(a, String) 
 
 Functor Parser where
-  map func (MkParser f) = MkParser $ \input => map (\(k,v) => (func k, v)) (f input)
+  map func (MkParser runParser) = MkParser $ \input => map (\result => (func $ fst result, snd result)) (runParser input)
 
 result : a -> Parser a
-result x = MkParser $ (\input => [(x, input)])
+result x = MkParser $ \input => [(x, input)]
 
 zero : Parser a 
-zero = MkParser $ \_ => []
+zero = MkParser $ \_ => [] 
 
 item : Parser Char
 item = MkParser $ \input => case (unpack input) of
                              [] => []
                              (x :: xs) => [(x, pack xs)] 
 
-satisfy : (Char -> Bool) -> Parser Char
-satisfy predicate = filter (\(k,v) => predicate k) xs
--- result : a -> Parser a
--- result v = MkParser $ \input => [(v, input)]
 
--- zero : Parser a
--- zero = MkParser ( \_ => MkParser $ [])
+-- satisfy : (Char -> Bool) -> Parser Char
+-- satisfy predicate = MkParser { runParser = \input => case parse input item of 
+--   [] => []
+--   xs => filter (\(k,v) => predicate k) xs 
+-- }
 
--- item : Parser Char
--- item = MkParser ( \input => case (unpack input) of
---                   [] => []
---                   (x :: xs) => [(x, pack xs)] )
-
+-- seq : Parser a -> Parser b -> Parser (a,b)
 -- applySecondParser : (a, String) -> Parser b -> List ((a,b), String)
 -- applySecondParser (v, s) parserb =  case parserb s of
 --   [] => []

@@ -35,3 +35,5 @@ data ParseError = ParseError !SourcePos [Message]
 Utils
 
 Build a type level splitAt that returns (Char, List Char) if splitat takes 1
+How to define a functor for a function
+propose to make function an instance of functor
