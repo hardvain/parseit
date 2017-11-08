@@ -1,31 +1,38 @@
 module IParsec 
 
-import Utils
-
 record Parser a where
   constructor MkParser
   runParser : String -> List(a, String) 
 
-Functor Parser where
-  map func (MkParser runParser) = MkParser $ \input => map (\result => (func $ fst result, snd result)) (runParser input)
 
 result : a -> Parser a
-result x = MkParser $ \input => [(x, input)]
+result a = MkParser $ \input => [(a, input)]
 
 zero : Parser a 
 zero = MkParser $ \_ => [] 
 
 item : Parser Char
 item = MkParser $ \input => case (unpack input) of
-                             [] => []
-                             (x :: xs) => [(x, pack xs)] 
+                              [] => []
+                              (x :: xs) => [(x, pack xs)] 
+Functor Parser where
+  map f (MkParser runParser) =  MkParser $ \input => map (\result => (f $ fst result, snd result)) (runParser input)
+
+helper : (a,String) -> (String -> List (a->b,String)) -> List (b,String) 
+helper (k,v) parser = let parseResult = parser v in 
+                          map (\(func,rest) => (func k, rest)) parseResult
+
+Applicative Parser where
+  pure = result
+  (MkParser p2) <*> (MkParser p1) = MkParser ( \input => concat $ map (\x => helper x p2) (p1 input))
+
+satisfy : (Char -> Bool) -> Parser Char
+satisfy predicate = MkParser $ \input => case runParser item input of 
+                                          [] => []
+                                          xs => filter (\(k,v) => predicate k) xs
 
 
--- satisfy : (Char -> Bool) -> Parser Char
--- satisfy predicate = MkParser { runParser = \input => case parse input item of 
---   [] => []
---   xs => filter (\(k,v) => predicate k) xs 
--- }
+
 
 -- seq : Parser a -> Parser b -> Parser (a,b)
 -- applySecondParser : (a, String) -> Parser b -> List ((a,b), String)
