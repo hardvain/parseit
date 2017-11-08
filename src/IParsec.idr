@@ -26,6 +26,9 @@ Applicative Parser where
   pure = result
   (MkParser p2) <*> (MkParser p1) = MkParser ( \input => concat $ map (\x => helper x p2) (p1 input))
 
+Monad Parser where
+  (MkParser p) >>= f = MkParser $ \input => concat $ map (\(k,v) => runParser (f k) v) (p input)
+
 satisfy : (Char -> Bool) -> Parser Char
 satisfy predicate = MkParser $ \input => case runParser item input of 
                                           [] => []
