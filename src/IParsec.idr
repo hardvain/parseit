@@ -22,6 +22,7 @@ helper : (a,String) -> (String -> List (a->b,String)) -> List (b,String)
 helper (k,v) parser = let parseResult = parser v in 
                           map (\(func,rest) => (func k, rest)) parseResult
 
+
 Applicative Parser where
   pure = result
   (MkParser p2) <*> (MkParser p1) = MkParser ( \input => concat $ map (\x => helper x p2) (p1 input))
@@ -29,24 +30,23 @@ Applicative Parser where
 Monad Parser where
   (MkParser p) >>= f = MkParser $ \input => concat $ map (\(k,v) => runParser (f k) v) (p input)
 
+
 satisfy : (Char -> Bool) -> Parser Char
-satisfy predicate = MkParser $ \input => case runParser item input of 
-                                          [] => []
-                                          xs => filter (\(k,v) => predicate k) xs
+satisfy predicate = do
+  x <- item
+  if predicate x then result x else zero
 
+char : Char -> Parser Char
+char x = satisfy (==x)
 
+digit : Parser Char
+digit = satisfy (\x => '0' <= x && x >= '9')
 
+lower : Parser Char 
+lower = satisfy (\x => 'a' <= x && < >= 'z')
 
--- seq : Parser a -> Parser b -> Parser (a,b)
--- applySecondParser : (a, String) -> Parser b -> List ((a,b), String)
--- applySecondParser (v, s) parserb =  case parserb s of
---   [] => []
---   (xs) => concat (map (\(b,rest) => [((v,b), rest)] ) xs)
-
--- seq : Parser a -> Parser b -> Parser (a,b)
--- seq parser1 parser2 = \input => case parser1 input of
---   [] => []
---   (xs) => concat (map (\v => applySecondParser v parser2) xs)
+upper : Parser Char 
+upper = satisfy (\x => 'A' <= x && < >= 'Z')
 
 
 {-
