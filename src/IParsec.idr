@@ -15,20 +15,24 @@ item = MkParser $ \input => case (unpack input) of
                               [] => []
                               (x :: xs) => [(x, pack xs)] 
 Functor Parser where
-  map f (MkParser runParser) =  MkParser $ \input => map (\result => (f $ fst result, snd result)) (runParser input)
-
+  map f p =  MkParser $ \input => 
+    do
+      (result, rest) <- runParser p input
+      pure (f result, rest)
 
 Applicative Parser where
   pure = result
-  (MkParser p2) <*> (MkParser p1) = MkParser $ \input => do
-    (result, rest) <- p1 input
-    (f, rest2) <- p2 rest
-    pure (f result, rest2)
-  -- (MkParser p2) <*> (MkParser p1) = MkParser $ \input => (p1 input) >>= \(result, rest) => (p2 rest) >>= \(f, rest2) => pure (f result, rest2)
+  p1 <*> p2 = MkParser $ \input => 
+    do
+      (result, rest) <- runParser p2 input
+      (f, rest2) <- runParser p1 rest
+      pure (f result, rest2)
 
 Monad Parser where
-  (MkParser p) >>= f = MkParser $ \input => concat $ map (\(k,v) => runParser (f k) v) (p input)
-
+  p >>= f = MkParser $ \input => 
+    do
+      (result, rest) <- runParser p input
+      runParser (f result) rest
 
 satisfy : (Char -> Bool) -> Parser Char
 satisfy predicate = do
@@ -50,7 +54,11 @@ upper = satisfy (\x => 'A' <= x && x >= 'Z')
 string : String -> Parser String
 string "" =  result ""
 string xs = case unpack xs of
-  (x :: xs) => char x >>= \_ => string (pack xs) >>= \_ => result $ pack (x :: xs)
+  (x :: xs) => 
+    do
+      _ <- char x
+      _ <- string (pack xs)
+      result $ pack (x :: xs)
 
 aravindh : Parser String
 aravindh = string "aravindh"
