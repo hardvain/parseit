@@ -17,14 +17,10 @@ item = MkParser $ \input => case (unpack input) of
 Functor Parser where
   map f (MkParser runParser) =  MkParser $ \input => map (\result => (f $ fst result, snd result)) (runParser input)
 
-helper : (a,String) -> (String -> List (a -> b,String)) -> List (b,String) 
-helper (k,v) parser = let parseResult = parser v in 
-                          map (\(func,rest) => (func k, rest)) parseResult
-
 
 Applicative Parser where
   pure = result
-  (MkParser p2) <*> (MkParser p1) = MkParser ( \input => concat $ map (\x => helper x p2) (p1 input))
+  (MkParser p2) <*> (MkParser p1) = MkParser $ \input => (p1 input) >>= \(result, rest) => (p2 rest) >>= \(f, rest2) => pure (f result, rest2)
 
 Monad Parser where
   (MkParser p) >>= f = MkParser $ \input => concat $ map (\(k,v) => runParser (f k) v) (p input)
@@ -52,6 +48,11 @@ string "" =  result ""
 string xs = case unpack xs of
   (x :: xs) => char x >>= \_ => string (pack xs) >>= \_ => result $ pack (x :: xs)
 
+aravindh : Parser String
+aravindh = string "aravindh"
+
+age : Parser Char
+age = digit
 {-
 sat : (Char -> Bool) -> Parser Char
 char : Char -> Parser Char
