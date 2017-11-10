@@ -4,7 +4,6 @@ record Parser a where
   constructor MkParser
   runParser : String -> List(a, String) 
 
-
 result : a -> Parser a
 result a = MkParser $ \input => [(a, input)]
 
@@ -18,7 +17,7 @@ item = MkParser $ \input => case (unpack input) of
 Functor Parser where
   map f (MkParser runParser) =  MkParser $ \input => map (\result => (f $ fst result, snd result)) (runParser input)
 
-helper : (a,String) -> (String -> List (a->b,String)) -> List (b,String) 
+helper : (a,String) -> (String -> List (a -> b,String)) -> List (b,String) 
 helper (k,v) parser = let parseResult = parser v in 
                           map (\(func,rest) => (func k, rest)) parseResult
 
@@ -43,11 +42,15 @@ digit : Parser Char
 digit = satisfy (\x => '0' <= x && x >= '9')
 
 lower : Parser Char 
-lower = satisfy (\x => 'a' <= x && < >= 'z')
+lower = satisfy (\x => 'a' <= x && x >= 'z')
 
 upper : Parser Char 
-upper = satisfy (\x => 'A' <= x && < >= 'Z')
+upper = satisfy (\x => 'A' <= x && x >= 'Z')
 
+string : String -> Parser String
+string "" =  result ""
+string xs = case unpack xs of
+  (x :: xs) => char x >>= \_ => string (pack xs) >>= \_ => result $ pack (x :: xs)
 
 {-
 sat : (Char -> Bool) -> Parser Char
