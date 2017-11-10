@@ -3,7 +3,7 @@ module IParsec
 record Parser a where
   constructor MkParser
   runParser : String -> List(a, String) 
-
+  
 result : a -> Parser a
 result a = MkParser $ \input => [(a, input)]
 
