@@ -20,7 +20,11 @@ Functor Parser where
 
 Applicative Parser where
   pure = result
-  (MkParser p2) <*> (MkParser p1) = MkParser $ \input => (p1 input) >>= \(result, rest) => (p2 rest) >>= \(f, rest2) => pure (f result, rest2)
+  (MkParser p2) <*> (MkParser p1) = MkParser $ \input => do
+    (result, rest) <- p1 input
+    (f, rest2) <- p2 rest
+    pure (f result, rest2)
+  -- (MkParser p2) <*> (MkParser p1) = MkParser $ \input => (p1 input) >>= \(result, rest) => (p2 rest) >>= \(f, rest2) => pure (f result, rest2)
 
 Monad Parser where
   (MkParser p) >>= f = MkParser $ \input => concat $ map (\(k,v) => runParser (f k) v) (p input)
