@@ -1,4 +1,4 @@
-module IParsec 
+module ParseIt 
 
 record Parser a where
   constructor MkParser
