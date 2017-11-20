@@ -2,31 +2,45 @@ module ParseIt
 
 import Source
 
-data ParseResult s a = ParseSuccess s (Maybe a) | ParseFailure s String 
+data ParseResult a = ParseSuccess (Maybe a) | ParseFailure String 
 
-Functor (ParseResult s) where
-  map f (ParseSuccess x (Just y)) = ParseSuccess x (Just (f y))
-  map f result@(ParseSuccess x Nothing) = result
-  map f result@(ParseFailure s e) = result
-  
+Functor ParseResult where
+  map f (ParseSuccess (Just y)) = ParseSuccess (Just (f y))
+  map f result@(ParseSuccess Nothing) = result
+  map f result@(ParseFailure e) = result
+
+Applicative ParseResult where
+  pure a = ParseSuccess (Just a)
+  (ParseSuccess Nothing) <*> result@(ParseSuccess x) = result
+  (ParseSuccess (Just y)) <*> (ParseSuccess x) = ?holeApplyApplicative_3
+  result@(ParseFailure y) <*> (ParseSuccess x) = result
+  f <*> result@(ParseFailure x) = result
 
 record Parser s a where
   constructor MkParser
-  runParser : (Source s) => s -> ParseResult s a
+  runParser : (Source s) => s -> (ParseResult a, s)
 
 -- A parser that consumes one character from the source
 item : (Source s) => Parser s Char
 item = MkParser $ \input => 
   case next input of
-    (Just char, rest) => ParseSuccess rest (Just char)
-    (Nothing, _) => ParseFailure empty "No more elements left to parse in the source"
+    (Just char, rest) => (ParseSuccess (Just char), rest)
+    (Nothing, _) => (ParseFailure "No more elements left to parse in the source", empty)
 
 -- a parser that does not consume anything from the source
 zero : (Source s) =>  Parser s a
-zero = MkParser $ \input => ParseSuccess input Nothing
-  
+zero = MkParser $ \input => (ParseSuccess Nothing, input)
+
+result : (Source s) => a -> Parser s a
+result a = MkParser $ \input => (ParseSuccess (Just a), input)
+
 Functor (Parser s) where
-  map f p = MkParser $ \input => map f (runParser p input)
+  map f p = MkParser $ \input => let (parseResult, rest) = (runParser p input) in (map f parseResult, rest)
+
+Applicative (Parser s) where
+  -- TODO: Use `result` here
+  pure a = MkParser $ \input => (ParseSuccess (Just a), input)
+  f <*> fa = ?holeApplyApplicative
 -- zero : Parser a 
 -- zero = MkParser $ \_ => [] 
 
