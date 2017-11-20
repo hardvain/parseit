@@ -2,19 +2,31 @@ module ParseIt
 
 import Source
 
-data ParseResult s a = ParseSuccess s a | ParseFailure s String 
+data ParseResult s a = ParseSuccess s (Maybe a) | ParseFailure s String 
+
+Functor (ParseResult s) where
+  map f (ParseSuccess x (Just y)) = ParseSuccess x (Just (f y))
+  map f result@(ParseSuccess x Nothing) = result
+  map f result@(ParseFailure s e) = result
+  
 
 record Parser s a where
   constructor MkParser
   runParser : (Source s) => s -> ParseResult s a
 
+-- A parser that consumes one character from the source
 item : (Source s) => Parser s Char
-item = MkParser $ \input => case next input of
-  (Just char, rest) => ParseSuccess rest char
-  (Nothing, _) => ParseFailure empty "No more elements left to parse" 
+item = MkParser $ \input => 
+  case next input of
+    (Just char, rest) => ParseSuccess rest (Just char)
+    (Nothing, _) => ParseFailure empty "No more elements left to parse in the source"
 
+-- a parser that does not consume anything from the source
+zero : (Source s) =>  Parser s a
+zero = MkParser $ \input => ParseSuccess input Nothing
   
-
+Functor (Parser s) where
+  map f p = MkParser $ \input => map f (runParser p input)
 -- zero : Parser a 
 -- zero = MkParser $ \_ => [] 
 
