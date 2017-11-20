@@ -1,7 +1,7 @@
-package iparsec
+package parseit
 
 sourcedir = src
 
-main = IParsec
+main = ParseIt
 
-modules = IParsec
+modules = ParseIt, Source
