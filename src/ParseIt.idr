@@ -48,38 +48,22 @@ Source s => Applicative (Parser s) where
 
 
 satisfy : (Source s) => (Char -> Bool) -> Parser s Char
-satisfy predicate = MkParser $ \input => case (runParser item) input of
+satisfy predicate = MkParser $ \input => case runParser item input of
   (ParseSuccess (Just x), rest) => if (predicate x) then (ParseSuccess (Just x), rest) else (ParseSuccess Nothing, input)
   (ParseSuccess Nothing, rest) => (ParseSuccess Nothing, input)
   (ParseFailure message, rest) => (ParseSuccess Nothing, input)
--- zero : Parser a 
--- zero = MkParser $ \_ => [] 
 
--- item : Parser Char
--- item = MkParser $ \input => case next input of 
---                                  Nothing => []
---                                  Just x => [x]
+char : (Source s) => Char -> Parser s Char
+char x = satisfy(==x)
 
+digit : (Source s) => Parser s Char
+digit = satisfy (\x => '0' <= x && x >= '9')
 
--- Functor Parser where
---   map f p =  MkParser $ \input => 
---     do
---       (result, rest) <- runParser p input
---       pure (f result, rest)
+lower : (Source s) => Parser s Char
+lower = satisfy (\x => 'a' <= x && x >= 'z')
 
--- Applicative Parser where
---   pure = result
---   p1 <*> p2 = MkParser $ \input => 
---     do
---       (result, rest) <- runParser p2 input
---       (f, rest2) <- runParser p1 rest
---       pure (f result, rest2)
-
--- Monad Parser where
---   p >>= f = MkParser $ \input => 
---     do
---       (result, rest) <- runParser p input
---       runParser (f result) rest
+upper : (Source s) => Parser s Char
+upper = satisfy (\x => 'A' <= x && x >= 'Z')
 
 -- satisfy : (Char -> Bool) -> Parser Char
 -- satisfy predicate = do
