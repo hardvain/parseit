@@ -19,7 +19,7 @@ Applicative ParseResult where
 
 record Parser s a where
   constructor MkParser
-  runParser : (Source s) => s -> (ParseResult a, s)
+  runParser :  s -> (ParseResult a, s)
 
 -- A parser that consumes one character from the source
 item : (Source s) => Parser s Char
@@ -41,6 +41,12 @@ Source s => Functor (Parser s) where
 Source s => Applicative (Parser s) where
   pure a = result a
   f <*> fa = ?holeApplyApplicative
+
+satisfy : (Source s) => (Char -> Bool) -> Parser s Char
+satisfy predicate = MkParser $ \input => case (runParser item) input of
+  (ParseSuccess (Just x), rest) => if (predicate x) then (ParseSuccess (Just x), rest) else (ParseSuccess Nothing, input)
+  (ParseSuccess Nothing, rest) => (ParseSuccess Nothing, input)
+  (ParseFailure message, rest) => (ParseSuccess Nothing, input)
 -- zero : Parser a 
 -- zero = MkParser $ \_ => [] 
 
