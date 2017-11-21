@@ -11,8 +11,9 @@ Functor ParseResult where
 
 Applicative ParseResult where
   pure a = ParseSuccess (Just a)
-  (ParseSuccess Nothing) <*> result@(ParseSuccess x) = result
-  (ParseSuccess (Just y)) <*> (ParseSuccess x) = ?holeApplyApplicative_3
+  result@(ParseSuccess Nothing) <*> (ParseSuccess x) = result
+  (ParseSuccess (Just y)) <*> result@(ParseSuccess Nothing) = result
+  (ParseSuccess (Just y)) <*> (ParseSuccess (Just x)) = ParseSuccess (Just (y x))
   result@(ParseFailure y) <*> (ParseSuccess x) = result
   f <*> result@(ParseFailure x) = result
 
@@ -28,18 +29,17 @@ item = MkParser $ \input =>
     (Nothing, _) => (ParseFailure "No more elements left to parse in the source", empty)
 
 -- a parser that does not consume anything from the source
-zero : (Source s) =>  Parser s a
+zero :  Parser s a
 zero = MkParser $ \input => (ParseSuccess Nothing, input)
 
-result : (Source s) => a -> Parser s a
+result : a -> Parser s a
 result a = MkParser $ \input => (ParseSuccess (Just a), input)
 
-Functor (Parser s) where
+Source s => Functor (Parser s) where
   map f p = MkParser $ \input => let (parseResult, rest) = (runParser p input) in (map f parseResult, rest)
 
-Applicative (Parser s) where
-  -- TODO: Use `result` here
-  pure a = MkParser $ \input => (ParseSuccess (Just a), input)
+Source s => Applicative (Parser s) where
+  pure a = result a
   f <*> fa = ?holeApplyApplicative
 -- zero : Parser a 
 -- zero = MkParser $ \_ => [] 
