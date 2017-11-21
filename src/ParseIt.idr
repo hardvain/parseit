@@ -13,7 +13,7 @@ Applicative ParseResult where
   pure a = ParseSuccess (Just a)
   result@(ParseSuccess Nothing) <*> (ParseSuccess x) = result
   (ParseSuccess (Just y)) <*> result@(ParseSuccess Nothing) = result
-  (ParseSuccess (Just y)) <*> (ParseSuccess (Just x)) = ParseSuccess (Just (y x))
+  (ParseSuccess (Just y)) <*> result@(ParseSuccess (Just x)) = map y result
   result@(ParseFailure y) <*> (ParseSuccess x) = result
   f <*> result@(ParseFailure x) = result
 
