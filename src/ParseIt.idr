@@ -40,7 +40,12 @@ Source s => Functor (Parser s) where
 
 Source s => Applicative (Parser s) where
   pure a = result a
-  f <*> fa = ?holeApplyApplicative
+  (MkParser f ) <*> (MkParser p) = MkParser $ \input => 
+    case p input of
+        (result1, rest) => 
+          case f rest of 
+            (result2, rest') => (result2 <*> result1, rest')
+
 
 satisfy : (Source s) => (Char -> Bool) -> Parser s Char
 satisfy predicate = MkParser $ \input => case (runParser item) input of
