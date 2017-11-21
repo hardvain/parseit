@@ -17,9 +17,10 @@ Applicative ParseResult where
   result@(ParseFailure y) <*> (ParseSuccess x) = result
   f <*> result@(ParseFailure x) = result
 
-record Parser s a where
-  constructor MkParser
-  runParser :  s -> (ParseResult a, s)
+data Parser s a = MkParser (s -> (ParseResult a, s))
+
+runParser : (Source s) => Parser s a -> s -> (ParseResult a,s)
+runParser (MkParser f) y = f y
 
 -- A parser that consumes one character from the source
 item : (Source s) => Parser s Char
