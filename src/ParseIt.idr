@@ -47,18 +47,17 @@ Source s => Applicative (Parser s) where
           case f rest of 
             (result2, rest') => (result2 <*> result1, rest')
 
-
 satisfy : (Source s) => (Char -> Bool) -> Parser s Char
 satisfy predicate = MkParser $ \input => case runParser item input of
-  (ParseSuccess (Just x), rest) => if (predicate x) then (ParseSuccess (Just x), rest) else (ParseSuccess Nothing, input)
+  (ParseSuccess (Just x), rest) => if (predicate x) then (ParseSuccess (Just x), rest) else (ParseFailure "Predicate Failed", input)
   (ParseSuccess Nothing, rest) => (ParseSuccess Nothing, input)
-  (ParseFailure message, rest) => (ParseSuccess Nothing, input)
+  (ParseFailure message, rest) => (ParseFailure message, rest)
 
 char : (Source s) => Char -> Parser s Char
 char x = satisfy(==x)
 
 digit : (Source s) => Parser s Char
-digit = satisfy (\x => '0' <= x && x >= '9')
+digit = satisfy (\x => '0' <= x && x <= '9')
 
 lower : (Source s) => Parser s Char
 lower = satisfy (\x => 'a' <= x && x >= 'z')
