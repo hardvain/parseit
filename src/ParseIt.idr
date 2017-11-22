@@ -65,18 +65,18 @@ lower = satisfy (\x => 'a' <= x && x <= 'z')
 upper : (Source s) => Parser s Char
 upper = satisfy (\x => 'A' <= x && x <= 'Z')
 
-plus : (Source s) => Parser s a -> Parser s a -> Parser s a
-plus p1 p2 = MkParser $ \input => case runParser p1 input of
+or : (Source s) => Parser s a -> Parser s a -> Parser s a
+or p1 p2 = MkParser $ \input => case runParser p1 input of
   res@(ParseSuccess (Just x), rest) => res
   _ => case runParser p2 input of
             res@(ParseSuccess (Just x), rest) => res
             (_, rest) => (ParseFailure "Invalid", rest)
 
 letter : (Source s) => Parser s Char
-letter = lower `plus` upper
+letter = lower `or` upper
 
 alphanum : (Source s) => Parser s Char
-alphanum = letter `plus` digit
+alphanum = letter `or` digit
   
 -- satisfy : (Char -> Bool) -> Parser Char
 -- satisfy predicate = do
