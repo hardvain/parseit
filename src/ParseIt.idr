@@ -47,6 +47,14 @@ Source s => Applicative (Parser s) where
           case f rest of 
             (result2, rest') => (result2 <*> result1, rest')
 
+Source s => Alternative (Parser s) where
+  empty = zero
+  fa <|> fb = MkParser $ \input => case runParser fa input of
+    res@(ParseSuccess (Just x), rest) => res
+    _ => case runParser fb input of
+              res@(ParseSuccess (Just x), rest) => res
+              (_, rest) => (ParseFailure "Invalid", rest)
+
 satisfy : (Source s) => (Char -> Bool) -> Parser s Char
 satisfy predicate = MkParser $ \input => case runParser item input of
   (ParseSuccess (Just x), rest) => 
@@ -78,18 +86,12 @@ tab = satisfy (=='\t')
 space : (Source s) => Parser s Char
 space = satisfy isSpace
 
-or : (Source s) => Parser s a -> Parser s a -> Parser s a
-or p1 p2 = MkParser $ \input => case runParser p1 input of
-  res@(ParseSuccess (Just x), rest) => res
-  _ => case runParser p2 input of
-            res@(ParseSuccess (Just x), rest) => res
-            (_, rest) => (ParseFailure "Invalid", rest)
 
 letter : (Source s) => Parser s Char
-letter = lower `or` upper
+letter = lower <|> upper
 
 alphanum : (Source s) => Parser s Char
-alphanum = letter `or` digit
+alphanum = letter <|> digit
 
 
 -- satisfy : (Char -> Bool) -> Parser Char
