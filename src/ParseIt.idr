@@ -60,11 +60,24 @@ digit : (Source s) => Parser s Char
 digit = satisfy (\x => '0' <= x && x <= '9')
 
 lower : (Source s) => Parser s Char
-lower = satisfy (\x => 'a' <= x && x >= 'z')
+lower = satisfy (\x => 'a' <= x && x <= 'z')
 
 upper : (Source s) => Parser s Char
-upper = satisfy (\x => 'A' <= x && x >= 'Z')
+upper = satisfy (\x => 'A' <= x && x <= 'Z')
 
+plus : (Source s) => Parser s a -> Parser s a -> Parser s a
+plus p1 p2 = MkParser $ \input => case runParser p1 input of
+  res@(ParseSuccess (Just x), rest) => res
+  _ => case runParser p2 input of
+            res@(ParseSuccess (Just x), rest) => res
+            (_, rest) => (ParseFailure "Invalid", rest)
+
+letter : (Source s) => Parser s Char
+letter = lower `plus` upper
+
+alphanum : (Source s) => Parser s Char
+alphanum = letter `plus` digit
+  
 -- satisfy : (Char -> Bool) -> Parser Char
 -- satisfy predicate = do
 --   x <- item
