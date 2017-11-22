@@ -1,0 +1,1 @@
+* Abstract char into token

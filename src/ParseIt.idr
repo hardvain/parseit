@@ -49,7 +49,8 @@ Source s => Applicative (Parser s) where
 
 satisfy : (Source s) => (Char -> Bool) -> Parser s Char
 satisfy predicate = MkParser $ \input => case runParser item input of
-  (ParseSuccess (Just x), rest) => if (predicate x) then (ParseSuccess (Just x), rest) else (ParseFailure "Predicate Failed", input)
+  (ParseSuccess (Just x), rest) => 
+    if (predicate x) then (ParseSuccess (Just x), rest) else (ParseFailure "Predicate Failed", input)
   (ParseSuccess Nothing, rest) => (ParseSuccess Nothing, input)
   (ParseFailure message, rest) => (ParseFailure message, rest)
 
@@ -65,6 +66,18 @@ lower = satisfy (\x => 'a' <= x && x <= 'z')
 upper : (Source s) => Parser s Char
 upper = satisfy (\x => 'A' <= x && x <= 'Z')
 
+newline : (Source s) => Parser s Char
+newline = satisfy (=='\n')
+
+carriageReturn : (Source s) => Parser s Char
+carriageReturn = satisfy (== '\r')
+
+tab : (Source s) => Parser s Char
+tab = satisfy (=='\t')
+
+space : (Source s) => Parser s Char
+space = satisfy isSpace
+
 or : (Source s) => Parser s a -> Parser s a -> Parser s a
 or p1 p2 = MkParser $ \input => case runParser p1 input of
   res@(ParseSuccess (Just x), rest) => res
@@ -77,7 +90,8 @@ letter = lower `or` upper
 
 alphanum : (Source s) => Parser s Char
 alphanum = letter `or` digit
-  
+
+
 -- satisfy : (Char -> Bool) -> Parser Char
 -- satisfy predicate = do
 --   x <- item
