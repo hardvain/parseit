@@ -63,7 +63,10 @@ satisfy predicate = MkParser $ \input => case runParser item input of
   (ParseFailure message, rest) => (ParseFailure message, rest)
 
 char : (Source s) => Char -> Parser s Char
-char x = satisfy(==x)
+char c = satisfy (\x => x == c)
+
+notChar : (Source s) => Char -> Parser s Char
+notChar c = satisfy (\x => x /= c)
 
 digit : (Source s) => Parser s Char
 digit = satisfy (\x => '0' <= x && x <= '9')
@@ -85,7 +88,6 @@ tab = satisfy (=='\t')
 
 space : (Source s) => Parser s Char
 space = satisfy isSpace
-
 
 letter : (Source s) => Parser s Char
 letter = lower <|> upper
