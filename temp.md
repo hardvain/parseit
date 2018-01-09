@@ -1,40 +1,25 @@
-Prim
-=============
-type Parsec s u = ParsecT s u Identity
+jsonParser : Parser Json
+jsonParser = array `or` object
 
-data State s u = State {
-      stateInput :: s,
-      statePos   :: !SourcePos,
-      stateUser  :: !u
-    }
-    deriving ( Typeable )
+array : Parser JsArray
+array = char '[' `followedBy` (zeroOrMore member ',') `followedBy` char ']'
 
--- | ParserT monad transformer and Parser type
+object : Parser JsObject
+object = char '{' `followedBy` (zeroOrMore pair ',') `followedBy` char '}'
 
--- | @ParsecT s u m a@ is a parser with stream type @s@, user state type @u@,
--- underlying monad @m@ and return type @a@.  Parsec is strict in the user state.
--- If this is undesirable, simply use a data type like @data Box a = Box a@ and
--- the state type @Box YourStateType@ to add a level of indirection.
+pair : Parser (String, JsValue)
+pair = string `followedBy` char ':' `followedBy` value
 
-newtype ParsecT s u m a
-    = ParsecT {unParser :: forall b .
-                 State s u
-              -> (a -> State s u -> ParseError -> m b) -- consumed ok
-              -> (ParseError -> m b)                   -- consumed err
-              -> (a -> State s u -> ParseError -> m b) -- empty ok
-              -> (ParseError -> m b)                   -- empty err
-              -> m b
-             }
-===============
-Error
-===============
-data ParseError = ParseError !SourcePos [Message]
-    deriving ( Typeable )
+value : Parser JsValue
+value = string | number | object | array | bool | null
+
+bool : Parser JsBool
+bool = string 'true' | string 'false'
+
+null : Parser JsNull
+null = string 'null'
+
+number : Parser JsNumber
+number = oneOrMore digit
 
 
-Utils
-
-Build a type level splitAt that returns (Char, List Char) if splitat takes 1
-How to define a functor for a function
-propose to make function an instance of functor
-Equivalent of Monad plus
