@@ -124,3 +124,8 @@ between open middle close = do
   result <- middle
   _ <- close
   pure result
+
+option : a -> Parser a -> Parser a
+option default p = MkParser $ \input => case runParser p input of
+  Nothing =>  Just(input, default)
+  otherwise => otherwise
