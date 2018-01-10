@@ -68,6 +68,8 @@ newline = satisfy (== '\n')
 tab : Parser Char
 tab = satisfy (== '\t')
 
+whitespace : Parser Char
+whitespace = satisfy (== ' ')
 
 carriageReturn : Parser Char
 carriageReturn = satisfy (== '\r')
@@ -76,9 +78,9 @@ carriageReturn = satisfy (== '\r')
 -- crlf = satisfy (== '\r\n')
 
 or : Parser a -> Parser a -> Parser a
-or (MkParser p1) (MkParser p2) = MkParser $ \input => case p1 input of
+or p1 p2 = MkParser $ \input => case runParser p1 input of
   r@(Just (rest, result)) => r
-  Nothing => p2 input
+  Nothing => runParser p2 input
 
 -- eol : Parser Char
 -- eol = crlf `or` newline
@@ -98,17 +100,20 @@ string input = case unpack input of
     result input
 
 
+many : Parser a -> Parser (List a)
+many p = MkParser $ \input => case runParser p input of
+  Nothing => Nothing
+  Just (rest, value) => case runParser (many p) rest of
+    Nothing => Just (rest, [value])
+    Just (rest2, values) => Just (rest2, value :: values)
 
-{-
-parser is a function from string to some output
-Parser a : String -> Maybe a
-runParser takes a parser and string and gives the result
-runParser : Parser a -> String -> Maybe a
-parseJson : String -> Json
-parseJson ""
-parse : a -> b
+skipMany : Parser a -> Parser ()
+skipMany p = do
+  r <- many p
+  result ()
 
-parseJson : String -> Json
-parseJson string = parse string with satisfyParser
-
--}
+choice : List (Parser a) -> Parser a
+choice [] = zero
+choice (x :: xs) = MkParser $ \input =>  case runParser x input of
+  Nothing => runParser (choice xs) input
+  otherwise => otherwise
