@@ -99,7 +99,6 @@ string input = case unpack input of
     _ <- string (pack xs)
     result input
 
-
 many : Parser a -> Parser (List a)
 many p = MkParser $ \input => case runParser p input of
   Nothing => Nothing
@@ -139,3 +138,15 @@ optional : Parser a -> Parser ()
 optional p = MkParser $ \input => case runParser p input of
   Nothing => Just (input, ())
   Just(rest, _) => Just (rest, ())
+
+-- TODO: this is just a specialized version of `>>` found in haskell for monads. Find how to do it in idris
+sequence : Parser a -> Parser b -> Parser b 
+sequence p1 p2 = do
+  _ <- p1
+  p2
+
+sepBy : Parser a -> Parser b -> Parser (List a)
+sepBy parser seperator = do
+  x <- parser
+  xs <- many (sequence seperator parser)
+  pure (x::xs)
