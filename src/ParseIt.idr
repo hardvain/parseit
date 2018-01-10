@@ -62,6 +62,33 @@ lower = satisfy (\x => 'a' <= x && x <= 'z')
 upper : Parser Char
 upper = satisfy (\x => 'A' <= x && x <= 'Z')
 
+newline : Parser Char
+newline = satisfy (== '\n')
+
+tab : Parser Char
+tab = satisfy (== '\t')
+
+
+carriageReturn : Parser Char
+carriageReturn = satisfy (== '\r')
+
+-- crlf : Parser Char
+-- crlf = satisfy (== '\r\n')
+
+or : Parser a -> Parser a -> Parser a
+or (MkParser p1) (MkParser p2) = MkParser $ \input => case p1 input of
+  r@(Just (rest, result)) => r
+  Nothing => p2 input
+
+-- eol : Parser Char
+-- eol = crlf `or` newline
+
+letter : Parser Char
+letter = upper `or` lower
+
+alphanum : Parser Char
+alphanum = letter `or` digit
+
 string : String -> Parser String
 string input = case unpack input of
   [] => MkParser $ \input => Just (input, "")
@@ -70,11 +97,6 @@ string input = case unpack input of
     _ <- string (pack xs)
     result input
 
-or : Parser a -> Parser a -> Parser a
-or (MkParser p1) (MkParser p2) = MkParser $ \input => case p1 input of
-  r@(Just (rest, result)) => r
-  Nothing => p2 input
-  
 
 
 {-
