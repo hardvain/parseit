@@ -156,3 +156,8 @@ endBy parser seperator = many ( do
   x <- parser
   _ <- seperator
   pure x)
+
+lookAhead : Parser a -> Parser a
+lookAhead p = MkParser $ \input => case runParser p input of
+  Nothing => Nothing
+  Just (_,result) => Just (input, result) 
