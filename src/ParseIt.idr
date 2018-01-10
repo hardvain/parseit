@@ -69,15 +69,14 @@ string input = case unpack input of
     _ <- char x
     _ <- string (pack xs)
     result input
-    
-followedBy : Parser a -> Parser b -> (a -> b -> c) -> Parser c
-followedBy p1 p2 x = do
-  r1 <- p1
-  r2 <- p2
-  result (x r1 r2)
 
 or : Parser a -> Parser a -> Parser a
-or (MkParser f) (MkParser g) = ?or_rhs_2
+or (MkParser p1) (MkParser p2) = MkParser $ \input => case p1 input of
+  r@(Just (rest, result)) => r
+  Nothing => p2 input
+  
+
+
 {-
 parser is a function from string to some output
 Parser a : String -> Maybe a
