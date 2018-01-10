@@ -78,9 +78,9 @@ carriageReturn = satisfy (== '\r')
 -- crlf = satisfy (== '\r\n')
 
 or : Parser a -> Parser a -> Parser a
-or (MkParser p1) (MkParser p2) = MkParser $ \input => case p1 input of
+or p1 p2 = MkParser $ \input => case runParser p1 input of
   r@(Just (rest, result)) => r
-  Nothing => p2 input
+  Nothing => runParser p2 input
 
 -- eol : Parser Char
 -- eol = crlf `or` newline
@@ -99,9 +99,21 @@ string input = case unpack input of
     _ <- string (pack xs)
     result input
 
+
 many : Parser a -> Parser (List a)
 many p = MkParser $ \input => case runParser p input of
   Nothing => Nothing
   Just (rest, value) => case runParser (many p) rest of
     Nothing => Just (rest, [value])
     Just (rest2, values) => Just (rest2, value :: values)
+
+skipMany : Parser a -> Parser ()
+skipMany p = do
+  r <- many p
+  result ()
+
+choice : List (Parser a) -> Parser a
+choice [] = zero
+choice (x :: xs) = MkParser $ \input =>  case runParser x input of
+  Nothing => runParser (choice xs) input
+  otherwise => otherwise
