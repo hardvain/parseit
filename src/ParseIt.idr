@@ -129,3 +129,8 @@ option : a -> Parser a -> Parser a
 option default p = MkParser $ \input => case runParser p input of
   Nothing =>  Just(input, default)
   otherwise => otherwise
+
+optionMaybe : Parser a -> Parser (Maybe a)
+optionMaybe p = MkParser $ \input => case runParser p input of
+  Nothing =>  Just(input, Nothing)
+  Just(rest, result) => Just (rest, Just result)
