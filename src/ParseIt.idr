@@ -68,6 +68,8 @@ newline = satisfy (== '\n')
 tab : Parser Char
 tab = satisfy (== '\t')
 
+whitespace : Parser Char
+whitespace = satisfy (== ' ')
 
 carriageReturn : Parser Char
 carriageReturn = satisfy (== '\r')
@@ -97,18 +99,9 @@ string input = case unpack input of
     _ <- string (pack xs)
     result input
 
-
-
-{-
-parser is a function from string to some output
-Parser a : String -> Maybe a
-runParser takes a parser and string and gives the result
-runParser : Parser a -> String -> Maybe a
-parseJson : String -> Json
-parseJson ""
-parse : a -> b
-
-parseJson : String -> Json
-parseJson string = parse string with satisfyParser
-
--}
+many : Parser a -> Parser (List a)
+many p = MkParser $ \input => case runParser p input of
+  Nothing => Nothing
+  Just (rest, value) => case runParser (many p) rest of
+    Nothing => Just (rest, [value])
+    Just (rest2, values) => Just (rest2, value :: values)
