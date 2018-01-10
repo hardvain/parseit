@@ -150,3 +150,9 @@ sepBy parser seperator = do
   x <- parser
   xs <- many (sequence seperator parser)
   pure (x::xs)
+
+endBy : Parser a -> Parser b -> Parser (List a)
+endBy parser seperator = many ( do
+  x <- parser
+  _ <- seperator
+  pure x)
