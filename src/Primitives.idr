@@ -44,12 +44,20 @@ space = satisfy isSpace
 spaces : Parser ()
 spaces = skipMany space
 
+hexDigit : Parser Char
+hexDigit = satisfy isHexDigit
+
+octDigit : Parser Char
+octDigit = satisfy isOctDigit
+
 crlf : Parser Char
 crlf = sequence carriageReturn newline
 
 eol : Parser Char
 eol = crlf `or` newline
 
+anyChar : Parser Char
+anyChar = satisfy (\_ => True)
 
 string : String -> Parser String
 string input = case unpack input of
