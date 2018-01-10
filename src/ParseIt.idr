@@ -23,25 +23,22 @@ item = MkParser $ \input => case (unpack input) of
   (x::xs) => Just (pack xs, x)
 
 Functor Parser where
-  map f (MkParser g) = MkParser $ \input => case g input of
-    Nothing => Nothing
-    Just (rest, x) => Just (rest, f x)
+  map f (MkParser g) = MkParser $ \input => do
+    (rest, x) <- g input
+    pure (rest, f x)
 
 Applicative Parser where
   pure = result
-  (MkParser f) <*> (MkParser g) = MkParser $ \input => case f input of
-    Nothing => Nothing
-    Just (rest, fun) => case g rest of
-      Nothing => Nothing
-      Just (rest2, value) => Just (rest2, fun value)
+  (MkParser f) <*> (MkParser g) = MkParser $ \input => do
+    (rest, fun) <- f input
+    (rest2, x) <- g rest
+    pure (rest2, fun x)
 
 Monad Parser where
-  (MkParser g) >>= f = MkParser $ \input => case g input of
-    Nothing => Nothing
-    Just (rest, value) => case (f value) of
-      MkParser p => case p rest of
-        Nothing => Nothing
-        Just (rest2, y) => Just (rest2, y)
+  (MkParser g) >>= f = MkParser $ \input => do
+    (rest, result) <- g input
+    let (MkParser p) = f result
+    p rest
 
 runParser : Parser a -> String -> Maybe (String, a)
 runParser (MkParser f) source = f source
