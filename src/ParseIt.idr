@@ -117,3 +117,10 @@ choice [] = zero
 choice (x :: xs) = MkParser $ \input =>  case runParser x input of
   Nothing => runParser (choice xs) input
   otherwise => otherwise
+
+between : Parser a -> Parser b -> Parser c -> Parser b
+between open middle close = do
+  _ <- open
+  result <- middle
+  _ <- close
+  pure result
