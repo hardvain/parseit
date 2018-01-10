@@ -3,7 +3,7 @@ module ParseIt
 
 data ParseResult a = ParseSuccess a | ParseFailure String
 
-data Parser a = MkParser (String -> (Maybe a,String))
+data Parser a = MkParser (String -> Maybe (a,String))
 
 implicit stringToChars : String -> List Char
 stringToChars = unpack
@@ -12,38 +12,38 @@ implicit charsToString : List Char -> String
 charsToString = pack
 
 zero : Parser a
-zero = MkParser $ \input => (Nothing, input)
+zero = MkParser $ \input => Nothing
 
 result : a -> Parser a
-result a = MkParser $ \input => (Just a, input)
+result a = MkParser $ \input => Just (a, input)
 
 item : Parser Char
 item = MkParser $ \input => case (unpack input) of 
-  [] => (Nothing, input) 
-  (x::xs) => (Just x, pack xs)
+  [] => Nothing
+  (x::xs) => Just (x, pack xs)
 
 Functor Parser where
   map f (MkParser g) = MkParser $ \input => case g input of
-    (Nothing, _) => (Nothing, input)
-    (Just x, rest) => (Just $ f x, rest)
+    Nothing => Nothing
+    Just (x, rest) => Just (f x, rest)
 
 Applicative Parser where
   pure = result
   (MkParser f) <*> (MkParser g) = MkParser $ \input => case f input of
-    (Nothing, rest) => (Nothing, input)
-    (Just fun, rest) => case g rest of
-      (Nothing, rest2) => (Nothing, input)
-      (Just value, rest2) => (Just (fun value), rest2)
+    Nothing => Nothing
+    Just (fun, rest) => case g rest of
+      Nothing => Nothing
+      Just (value, rest2) => Just (fun value, rest2)
 
 Monad Parser where
   (MkParser g) >>= f = MkParser $ \input => case g input of
-    (Nothing, rest) => (Nothing, input)
-    (Just value, rest) => case (f value) of
+    Nothing => Nothing
+    Just (value, rest) => case (f value) of
       MkParser p => case p rest of
-        (Nothing, _) => (Nothing, input)
-        (Just y, rest2) => (Just y, rest2)
+        Nothing => Nothing
+        Just (y, rest2) => Just (y, rest2)
 
-runParser : Parser a -> String -> (Maybe a, String)
+runParser : Parser a -> String -> Maybe (a, String)
 runParser (MkParser f) source = f source
 
 satisfy : (Char -> Bool) -> Parser Char
@@ -67,7 +67,7 @@ upper = satisfy (\x => 'A' <= x && x <= 'Z')
 
 string : String -> Parser String
 string input = case unpack input of
-  [] => MkParser $ \input => (Just "", input)
+  [] => MkParser $ \input => Just ("", input)
   (x :: xs) => do 
     _ <- char x
     _ <- string (pack xs)
