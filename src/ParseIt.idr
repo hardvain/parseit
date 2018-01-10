@@ -1,8 +1,9 @@
+||| A monadic parser combinator module for Idris
 module ParseIt
 %access public export
 
-data ParseResult a = ParseSuccess a | ParseFailure String
 
+||| The main parser type which is a wrapper over a function that take a string and returns either a tuple of parsed value and the rest of the input in case of success or nothing wrapped in a Maybe
 data Parser a = MkParser (String -> Maybe (String, a))
 
 implicit stringToChars : String -> List Char
@@ -11,9 +12,12 @@ stringToChars = unpack
 implicit charsToString : List Char -> String
 charsToString = pack
 
+||| An empty parser which always fails
 zero : Parser a
 zero = MkParser $ \input => Nothing
 
+||| A generic parser that returns the value provided without consuming the input
+||| @ a The value that should be the result of the parser
 result : a -> Parser a
 result a = MkParser $ \input => Just (input, a)
 
