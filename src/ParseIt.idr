@@ -1,11 +1,15 @@
 module ParseIt
 %access public export
+
+data ParseResult a = ParseSuccess a | ParseFailure String
+
 data Parser a = MkParser (String -> (Maybe a,String))
 
-Functor Parser where
-  map f (MkParser g) = MkParser $ \input => case g input of
-    (Just x, rest) => (Just $ f x, rest)
-    (Nothing,_) => (Nothing, input)
+implicit stringToChars : String -> List Char
+stringToChars = unpack
+
+implicit charsToString : List Char -> String
+charsToString = pack
 
 zero : Parser a
 zero = MkParser $ \input => (Nothing, input)
@@ -13,14 +17,23 @@ zero = MkParser $ \input => (Nothing, input)
 result : a -> Parser a
 result a = MkParser $ \input => (Just a, input)
 
+item : Parser Char
+item = MkParser $ \input => case (unpack input) of 
+  [] => (Nothing, input) 
+  (x::xs) => (Just x, pack xs)
+
+Functor Parser where
+  map f (MkParser g) = MkParser $ \input => case g input of
+    (Nothing, _) => (Nothing, input)
+    (Just x, rest) => (Just $ f x, rest)
+
 Applicative Parser where
-  pure a = result a
+  pure = result
   (MkParser f) <*> (MkParser g) = MkParser $ \input => case f input of
     (Nothing, rest) => (Nothing, input)
     (Just fun, rest) => case g rest of
       (Nothing, rest2) => (Nothing, input)
       (Just value, rest2) => (Just (fun value), rest2)
-
 
 Monad Parser where
   (MkParser g) >>= f = MkParser $ \input => case g input of
@@ -30,17 +43,15 @@ Monad Parser where
         (Nothing, _) => (Nothing, input)
         (Just y, rest2) => (Just y, rest2)
 
-runParser : Parser a -> String -> Maybe a
-runParser (MkParser f) source = fst $ f source
+runParser : Parser a -> String -> (Maybe a, String)
+runParser (MkParser f) source = f source
 
 satisfy : (Char -> Bool) -> Parser Char
-satisfy predicate = MkParser $ \input => case (unpack input) of
-  [] => (Nothing, input)
-  (x::xs) => if predicate x then (Just x, pack xs) else (Nothing, input)
-
-
-item : Parser Char
-item = satisfy (\x => True)
+satisfy predicate = do
+  x <- item
+  if predicate x 
+    then result x
+    else zero
 
 char : Char -> Parser Char
 char character = satisfy (== character)
@@ -54,22 +65,22 @@ lower = satisfy (\x => 'a' <= x && x <= 'z')
 upper : Parser Char
 upper = satisfy (\x => 'A' <= x && x <= 'Z')
 
-bind : Parser a -> (a -> Parser b) -> Parser b
-bind (MkParser g) f = MkParser $ \input => case g input of 
-  (Nothing, _) => (Nothing, input)
-  (Just value, rest) => case (f value) of
-    MkParser p => p rest
-
-
 string : String -> Parser String
 string input = case unpack input of
-  [] => zero
-  (x :: xs) => char x >>= \_ => string (pack xs) >>= \_ => result input
+  [] => MkParser $ \input => (Just "", input)
+  (x :: xs) => do 
+    _ <- char x
+    _ <- string (pack xs)
+    result input
     
+followedBy : Parser a -> Parser b -> (a -> b -> c) -> Parser c
+followedBy p1 p2 x = do
+  r1 <- p1
+  r2 <- p2
+  result (x r1 r2)
 
-classKeywordParser : Parser String
-classKeywordParser = string "class"
-
+or : Parser a -> Parser a -> Parser a
+or (MkParser f) (MkParser g) = ?or_rhs_2
 {-
 parser is a function from string to some output
 Parser a : String -> Maybe a
