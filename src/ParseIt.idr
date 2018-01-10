@@ -1,132 +1,114 @@
-module ParseIt 
+module ParseIt
+%access public export
 
-import Source
+data ParseResult a = ParseSuccess a | ParseFailure String
 
-data ParseResult a = ParseSuccess (Maybe a) | ParseFailure String 
+data Parser a = MkParser (String -> Maybe (String, a))
 
-Functor ParseResult where
-  map f (ParseSuccess (Just y)) = ParseSuccess (Just (f y))
-  map f result@(ParseSuccess Nothing) = result
-  map f result@(ParseFailure e) = result
+implicit stringToChars : String -> List Char
+stringToChars = unpack
 
-Applicative ParseResult where
-  pure a = ParseSuccess (Just a)
-  result@(ParseSuccess Nothing) <*> (ParseSuccess x) = result
-  (ParseSuccess (Just y)) <*> result@(ParseSuccess Nothing) = result
-  (ParseSuccess (Just y)) <*> result@(ParseSuccess (Just x)) = map y result
-  result@(ParseFailure y) <*> (ParseSuccess x) = result
-  f <*> result@(ParseFailure x) = result
+implicit charsToString : List Char -> String
+charsToString = pack
 
-data Parser s a = MkParser (s -> (ParseResult a, s))
+zero : Parser a
+zero = MkParser $ \input => Nothing
 
-runParser : (Source s) => Parser s a -> s -> (ParseResult a,s)
-runParser (MkParser f) y = f y
+result : a -> Parser a
+result a = MkParser $ \input => Just (input, a)
 
--- A parser that consumes one character from the source
-item : (Source s) => Parser s Char
-item = MkParser $ \input => 
-  case next input of
-    (Just char, rest) => (ParseSuccess (Just char), rest)
-    (Nothing, _) => (ParseFailure "No more elements left to parse in the source", empty)
+item : Parser Char
+item = MkParser $ \input => case (unpack input) of 
+  [] => Nothing
+  (x::xs) => Just (pack xs, x)
 
--- a parser that does not consume anything from the source
-zero :  Parser s a
-zero = MkParser $ \input => (ParseSuccess Nothing, input)
+Functor Parser where
+  map f (MkParser g) = MkParser $ \input => do
+    (rest, x) <- g input
+    pure (rest, f x)
 
-result : a -> Parser s a
-result a = MkParser $ \input => (ParseSuccess (Just a), input)
+Applicative Parser where
+  pure = result
+  (MkParser f) <*> (MkParser g) = MkParser $ \input => do
+    (rest, fun) <- f input
+    (rest2, x) <- g rest
+    pure (rest2, fun x)
 
-Source s => Functor (Parser s) where
-  map f p = MkParser $ \input => let (parseResult, rest) = (runParser p input) in (map f parseResult, rest)
+Monad Parser where
+  (MkParser g) >>= f = MkParser $ \input => do
+    (rest, result) <- g input
+    let (MkParser p) = f result
+    p rest
 
-Source s => Applicative (Parser s) where
-  pure a = result a
-  (MkParser f ) <*> (MkParser p) = MkParser $ \input => 
-    case p input of
-        (result1, rest) => 
-          case f rest of 
-            (result2, rest') => (result2 <*> result1, rest')
+runParser : Parser a -> String -> Maybe (String, a)
+runParser (MkParser f) source = f source
 
-Source s => Alternative (Parser s) where
-  empty = zero
-  fa <|> fb = MkParser $ \input => case runParser fa input of
-    res@(ParseSuccess (Just x), rest) => res
-    _ => case runParser fb input of
-              res@(ParseSuccess (Just x), rest) => res
-              (_, rest) => (ParseFailure "Invalid", rest)
+satisfy : (Char -> Bool) -> Parser Char
+satisfy predicate = do
+  x <- item
+  if predicate x 
+    then result x
+    else zero
 
-satisfy : (Source s) => (Char -> Bool) -> Parser s Char
-satisfy predicate = MkParser $ \input => case runParser item input of
-  (ParseSuccess (Just x), rest) => 
-    if (predicate x) then (ParseSuccess (Just x), rest) else (ParseFailure "Predicate Failed", input)
-  (ParseSuccess Nothing, rest) => (ParseSuccess Nothing, input)
-  (ParseFailure message, rest) => (ParseFailure message, rest)
+char : Char -> Parser Char
+char character = satisfy (== character)
 
-char : (Source s) => Char -> Parser s Char
-char c = satisfy (\x => x == c)
-
-notChar : (Source s) => Char -> Parser s Char
-notChar c = satisfy (\x => x /= c)
-
-digit : (Source s) => Parser s Char
+digit : Parser Char
 digit = satisfy (\x => '0' <= x && x <= '9')
 
-lower : (Source s) => Parser s Char
+lower : Parser Char
 lower = satisfy (\x => 'a' <= x && x <= 'z')
 
-upper : (Source s) => Parser s Char
+upper : Parser Char
 upper = satisfy (\x => 'A' <= x && x <= 'Z')
 
-newline : (Source s) => Parser s Char
-newline = satisfy (=='\n')
+newline : Parser Char
+newline = satisfy (== '\n')
 
-carriageReturn : (Source s) => Parser s Char
+tab : Parser Char
+tab = satisfy (== '\t')
+
+
+carriageReturn : Parser Char
 carriageReturn = satisfy (== '\r')
 
-tab : (Source s) => Parser s Char
-tab = satisfy (=='\t')
+-- crlf : Parser Char
+-- crlf = satisfy (== '\r\n')
 
-space : (Source s) => Parser s Char
-space = satisfy isSpace
+or : Parser a -> Parser a -> Parser a
+or (MkParser p1) (MkParser p2) = MkParser $ \input => case p1 input of
+  r@(Just (rest, result)) => r
+  Nothing => p2 input
 
-letter : (Source s) => Parser s Char
-letter = lower <|> upper
+-- eol : Parser Char
+-- eol = crlf `or` newline
 
-alphanum : (Source s) => Parser s Char
-alphanum = letter <|> digit
+letter : Parser Char
+letter = upper `or` lower
+
+alphanum : Parser Char
+alphanum = letter `or` digit
+
+string : String -> Parser String
+string input = case unpack input of
+  [] => MkParser $ \input => Just (input, "")
+  (x :: xs) => do 
+    _ <- char x
+    _ <- string (pack xs)
+    result input
 
 
--- satisfy : (Char -> Bool) -> Parser Char
--- satisfy predicate = do
---   x <- item
---   if predicate x then result x else zero
-
--- char : Char -> Parser Char
--- char x = satisfy (==x)
-
--- digit : Parser Char
--- digit = satisfy (\x => '0' <= x && x >= '9')
-
--- lower : Parser Char 
--- lower = satisfy (\x => 'a' <= x && x >= 'z')
-
--- upper : Parser Char 
--- upper = satisfy (\x => 'A' <= x && x >= 'Z')
 
 {-
-sat : (Char -> Bool) -> Parser Char
-char : Char -> Parser Char
-digit : Parser Char
-lower : Parser Char
-upper : Parser Char
-plus : Parser a -> Parser a -> Parser a
-letter : Parser Char
-alphanum : Parser Char
-word : Parser Char
-many : Parser a -> Parser (List a)
-ident : Parser String
-nat : Parser Int
-int : Parser Int
-sepby1 : Parser a -> Parser b -> Parser (List a)
-bracket : Parser a -> Parser b -> Parser c -> Parser b
+parser is a function from string to some output
+Parser a : String -> Maybe a
+runParser takes a parser and string and gives the result
+runParser : Parser a -> String -> Maybe a
+parseJson : String -> Json
+parseJson ""
+parse : a -> b
+
+parseJson : String -> Json
+parseJson string = parse string with satisfyParser
+
 -}
