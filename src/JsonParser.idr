@@ -57,24 +57,42 @@ mutual
 
   valueParser : Parser Json
   valueParser = ((((stringParser `or`numberParser) `or` objectParser) `or` arrayParser) `or` boolParser) `or` nullParser
-
+  
+  keyParser : Parser String
+  keyParser = do
+    _ <- char '"'
+    _ <- spaces
+    key <- word
+    _ <- spaces
+    _ <- char '"'
+    pure key
+    
   pairParser : Parser (String, Json)
   pairParser = do
-    key <- word
+    key <- keyParser
+    _ <- spaces
     _ <- char ':'
+    _ <- spaces
     value <- valueParser
     pure (key, value)
 
   objectParser : Parser Json
   objectParser = do
     _ <- char '{'
+    _ <- spaces    
     pairs <- sepBy pairParser (char ',')
+    _ <- spaces    
     _ <- char '}'
     pure (JsObject pairs)
 
   arrayParser : Parser Json
   arrayParser = do
     _ <- char '['
+    _ <- spaces    
     values <- sepBy valueParser (char ',')
+    _ <- spaces    
     _ <- char ']'
     pure (JsArray values)
+
+jsonString : String
+jsonString = "{\"name\":\"aravindh\",\"age\":28,\"isMale\":true,\"isFemale\":false,\"languages\":[\"idris\",\"rust\",\"scala\"]}"
