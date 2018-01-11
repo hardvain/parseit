@@ -1,8 +1,11 @@
 module JsonParser
 
-import ParseIt
+import Core
 import Combinators
 import Primitives
+import Data.String 
+
+%access public export
 
 data Json = 
   JsObject (List (String, Json))
@@ -32,3 +35,36 @@ sample = JsObject [
     ("languages", JsArray [JsString "idris", JsString "rust"]),
     ("bio", JsObject [("first_name", JsString "Aravindh"), ("last_name", JsString "Sridaran")])
   ]
+mutual 
+  jsonParser : Parser Json
+  jsonParser = ?hole
+
+  nullParser : Parser Json
+  nullParser = map (\_ => JsNull) (string "null")
+
+  defaultNumber : Maybe Int -> Int
+  defaultNumber Nothing = 0
+  defaultNumber (Just x) = x
+
+  stringParser : Parser Json
+  stringParser = result (JsString "a")
+
+  numberParser : Parser Json
+  numberParser = map (\numberString => JsNumber $ defaultNumber $ parseInteger (pack numberString)) (many digit)
+
+  boolParser : Parser Json
+  boolParser = map (\value => if value == "true" then JsBool True else JsBool False) ((string "true") `or` (string "false"))
+
+  valueParser : Parser Json
+  valueParser = ((((stringParser `or`numberParser) `or` objectParser) `or` arrayParser) `or` boolParser) `or` nullParser
+
+  pairParser : Parser (String, Json)
+  pairParser = do
+    key <- word
+    _ <- char ':'
+    value <- valueParser
+    pure (key, value)
+
+  objectParser : Parser Json
+
+  arrayParser : Parser Json

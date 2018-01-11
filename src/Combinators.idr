@@ -1,6 +1,6 @@
 module Combinators
 
-import ParseIt
+import Core
 
 %access public export
 

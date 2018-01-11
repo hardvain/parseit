@@ -1,6 +1,6 @@
 module Primitives
 
-import ParseIt
+import Core
 import Combinators
 
 %access public export
@@ -66,3 +66,12 @@ string input = case unpack input of
     _ <- char x
     _ <- string (pack xs)
     result input
+
+    
+word : Parser String
+word = nonEmptyWord `or` result "" where 
+  nonEmptyWord : Parser String
+  nonEmptyWord = do
+    x <- letter
+    xs <- word
+    pure (x::xs)

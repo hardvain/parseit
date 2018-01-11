@@ -4,4 +4,4 @@ sourcedir = src
 
 main = ParseIt
 
-modules = ParseIt, Combinators, Primitives, JsonParser
+modules = ParseIt, Core, Combinators, Primitives, JsonParser
