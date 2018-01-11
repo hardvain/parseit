@@ -37,7 +37,7 @@ sample = JsObject [
   ]
 mutual 
   jsonParser : Parser Json
-  jsonParser = ?hole
+  jsonParser = valueParser
 
   nullParser : Parser Json
   nullParser = map (\_ => JsNull) (string "null")
@@ -66,5 +66,15 @@ mutual
     pure (key, value)
 
   objectParser : Parser Json
+  objectParser = do
+    _ <- char '{'
+    pairs <- sepBy pairParser (char ',')
+    _ <- char '}'
+    pure (JsObject pairs)
 
   arrayParser : Parser Json
+  arrayParser = do
+    _ <- char '['
+    values <- sepBy valueParser (char ',')
+    _ <- char ']'
+    pure (JsArray values)
