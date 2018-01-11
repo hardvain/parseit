@@ -17,9 +17,11 @@ many p = MkParser $ \input => case runParser p input of
     Just (rest2, values) => Just (rest2, value :: values)
 
 skipMany : Parser a -> Parser ()
-skipMany p = do
-  r <- many p
-  result ()
+skipMany p = skipManySpaces `or` result () where 
+  skipManySpaces : Parser ()
+  skipManySpaces = do
+    r <- many p
+    result ()
 
 choice : List (Parser a) -> Parser a
 choice [] = zero

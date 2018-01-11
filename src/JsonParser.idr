@@ -47,7 +47,11 @@ mutual
   defaultNumber (Just x) = x
 
   stringParser : Parser Json
-  stringParser = result (JsString "a")
+  stringParser = do
+    _ <- char '"'
+    str <- word
+    _ <- char '"'    
+    pure (JsString str)
 
   numberParser : Parser Json
   numberParser = map (\numberString => JsNumber $ defaultNumber $ parseInteger (pack numberString)) (many digit)
@@ -56,7 +60,7 @@ mutual
   boolParser = map (\value => if value == "true" then JsBool True else JsBool False) ((string "true") `or` (string "false"))
 
   valueParser : Parser Json
-  valueParser = ((((stringParser `or`numberParser) `or` objectParser) `or` arrayParser) `or` boolParser) `or` nullParser
+  valueParser = (objectParser `or` (arrayParser `or` (nullParser `or` (boolParser `or` (numberParser `or` stringParser)))) )
   
   keyParser : Parser String
   keyParser = do
